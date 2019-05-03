@@ -1,0 +1,138 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-cpx-ingress
+spec:
+  replicas: 1
+  template:
+    metadata:
+      name: {{ .Release.Name }}-cpx-ingress
+      labels:
+        app: {{ .Release.Name }}-cpx-ingress
+      annotations:
+    spec:
+      serviceAccountName: {{ .Values.serviceAccount }}
+      containers:
+        - name: cpx-ingress
+          image: "{{ .Values.cpx.image }}"
+          imagePullPolicy: {{ .Values.cpx.pullPolicy }}
+          securityContext:
+             privileged: true
+          env:
+          - name: "EULA"
+            value: "{{ .Values.license.accept }}"
+          - name: "KUBERNETES_TASK_ID"
+            value: ""
+          #This is required for Health check to succeed
+          readinessProbe:
+            failureThreshold: 3
+            httpGet:
+              path: /
+              port: 9080
+              scheme: HTTP
+            initialDelaySeconds: 60
+            periodSeconds: 5
+            successThreshold: 1
+            timeoutSeconds: 1
+{{- if .Values.cic.required }}
+        # Add cic as a sidecar
+        - name: cic
+          image: "{{ .Values.cic.image }}"
+          imagePullPolicy: {{ .Values.cic.pullPolicy }}
+          env:
+          - name: "EULA"
+            value: "{{ .Values.license.accept }}"
+          - name: "NS_IP"
+            value: "127.0.0.1"
+          - name: "NS_PROTOCOL"
+            value: "HTTP"
+          - name: "NS_PORT"
+            value: "80"
+          - name: "NS_DEPLOYMENT_MODE"
+            value: "SIDECAR"
+          - name: "NS_ENABLE_MONITORING"
+            value: "YES"
+          - name: POD_NAME
+            valueFrom:
+              fieldRef:
+                apiVersion: v1
+                fieldPath: metadata.name
+          - name: POD_NAMESPACE
+            valueFrom:
+              fieldRef:
+                apiVersion: v1
+                fieldPath: metadata.namespace
+{{- if .Values.kubernetesURL }}
+          - name: "kubernetes_url"
+            value: "{{ .Values.kubernetesURL }}"
+{{- end}}
+{{- if .Values.ingressClass }}
+          args:
+           - --ingress-class
+            {{ .Values.ingressClass }}
+{{- end }}
+{{- end }}
+{{- if .Values.exporter.required }}
+        - name: exporter
+          image: "{{ .Values.exporter.image }}"
+          args:
+            - "--target-nsip=127.0.0.1"
+            - "--port={{ .Values.exporter.ports.containerPort }}"
+          imagePullPolicy: {{ .Values.exporter.pullPolicy }}
+{{- end }}
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Release.Name }}-cpx-service
+  labels:
+    app: cpx-service
+    service-type: citrix-adc-monitor
+    app.kubernetes.io/name: "{{ .Release.Name }}"
+spec:
+  type: LoadBalancer
+  ports:
+  - port: 80
+    protocol: TCP
+    name: http
+  - port: 443
+    protocol: TCP
+    name: https
+  - port: 9080
+    protocol: TCP
+    name: nitro
+{{- if .Values.exporter.required }}
+  - port: {{ .Values.exporter.ports.containerPort }}
+    targetPort: {{ .Values.exporter.ports.containerPort }}
+    name: exporter-port
+{{- end }}
+  selector:
+    app: {{ .Release.Name }}-cpx-ingress
+
+---
+
+{{- if .Values.exporter.required }}
+
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+ name: {{ .Release.Name }}-citrix-adc-servicemonitor
+ labels:
+   servicemonitor: citrix-adc
+   app.kubernetes.io/name: "{{ .Release.Name }}"
+spec:
+ endpoints:
+ - interval: 30s
+   port: exporter-port
+ selector:
+   matchLabels:
+     service-type: citrix-adc-monitor
+ namespaceSelector:
+   matchNames:
+   - monitoring
+   - default
+   - {{ .Release.Namespace }}
+
+{{- end }}
