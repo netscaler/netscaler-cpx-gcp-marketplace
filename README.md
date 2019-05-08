@@ -40,12 +40,19 @@ export CLUSTER=citrix-cpx
 export ZONE=asia-south1-a
 ```
 ```shell
-gcloud container clusters create "$CLUSTER" --zone "$ZONE"
+gcloud beta container --project <your-project-name> clusters create "$CLUSTER" --zone "$ZONE" --username "admin" --cluster-version "1.11.8-gke.6" --machine-type "n1-standard-2" --image-type "COS" --disk-type "pd-standard" --disk-size "100"  --num-nodes "3" --addons HorizontalPodAutoscaling,HttpLoadBalancing
 ```
 
 #### Configure `kubectl` to connect to the cluster
+Connect to the created Kubernetes cluster and create a cluster-admin role for your Google Account
+
 ```shell
-gcloud container clusters get-credentials "$CLUSTER" --zone "$ZONE"
+gcloud container clusters get-credentials "$CLUSTER" --zone "$ZONE" --project <name-of-your-project>
+```
+Now your kubectl client is updated with the credentials required to login to the newly created Kubernetes cluster
+
+```shell
+kubectl create clusterrolebinding cpx-cluster-admin --clusterrole=cluster-admin --user=<email of the gcp account>
 ```
 
 #### Clone this repo
