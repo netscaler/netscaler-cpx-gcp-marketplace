@@ -56,9 +56,10 @@ kubectl create clusterrolebinding cpx-cluster-admin --clusterrole=cluster-admin 
 ```
 
 #### Clone this repo
-Clone this repo and the associated tools repo:
+Clone this repo. Go to citrix-adc-cpx-gcp-marketplace/ directory:
 ```shell
-git clone --recursive https://github.com/GoogleCloudPlatform/click-to-deploy.git
+git clone https://github.com/citrix/citrix-adc-cpx-gcp-marketplace.git
+cd citrix-adc-cpx-gcp-marketplace/
 ```
 
 #### Install the Application resource definition
@@ -68,7 +69,7 @@ such as Services, Deployments, and so on, that you can manage as a group.
 To set up your cluster to understand Application resources, run the following
 command:
 ```shell
-kubectl apply -f "https://raw.githubusercontent.com/GoogleCloudPlatform/marketplace-k8s-app-tools/master/crd/app-crd.yaml"
+make crd/install
 ```
 You need to run this command once for each cluster.
 
@@ -79,14 +80,6 @@ community. The source code can be found on
 
 ### **Install the Application**
 
-Go to click-to-deploy/k8s folder and clone this repo. Go to citrix-adc-cpx-gcp-marketplace directory:
-```shell
-cd click-to-deploy/k8s
-git clone https://github.com/citrix/citrix-adc-cpx-gcp-marketplace.git
-cd citrix-adc-cpx-gcp-marketplace/
-```
-
-#### Configuration
 The following table lists the configurable parameters of the CPX with Citrix ingress controller running as side-car chart and their default values.
 
 | Parameter | Description | Default |
