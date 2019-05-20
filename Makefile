@@ -1,7 +1,7 @@
-include ../app.Makefile
-include ../crd.Makefile
-include ../gcloud.Makefile
-include ../var.Makefile
+include ./app.Makefile
+include ./crd.Makefile
+include ./gcloud.Makefile
+include ./var.Makefile
 
 
 TAG ?= 12.1-51.16

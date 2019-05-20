@@ -18,19 +18,23 @@ set -xeo pipefail
 shopt -s nullglob
 
 POD_NAME=$(kubectl get pod -oname \
-        --namespace default | \
+        --namespace ${NAMESPACE} | \
         sed -n "/\\/${APP_INSTANCE_NAME}-cpx-ingress/s.pods\\?/..p")
 
 POD_IP=$(kubectl get pods "${POD_NAME}" \
-      --namespace default -ojsonpath="{.status.podIP}")
+      --namespace ${NAMESPACE} -ojsonpath="{.status.podIP}")
 
 EXTERNAL_IP="$(kubectl get service/${APP_INSTANCE_NAME}-cpx-service \
     --namespace ${NAMESPACE} \
     --output jsonpath='{.status.loadBalancer.ingress[0].ip}')"
 
+POD_STATUS=$(kubectl get pods "${POD_NAME}" \
+           --namespace ${NAMESPACE} -ojsonpath="{.status.phase}")
+
 export EXTERNAL_IP
 export POD_NAME
 export POD_IP
+export POD_STATUS
 
 for test in /tests/*; do
   testrunner -logtostderr "--test_spec=${test}"

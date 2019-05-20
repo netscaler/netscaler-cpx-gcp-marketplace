@@ -3,15 +3,15 @@ actions:
 - name: Is Citrix ADC CPX instance up and running
   bashTest:
     script: |-
-      curl "http://${POD_IP}:80/"
+      echo ${POD_STATUS}
     expect:
-      exitCode:
-        equals: 0
+      stdout:
+        contains: 'Running'
 
 - name: Is NITRO reponding properly in Citrix ADC CPX
   bashTest:
     script: |-
-      curl "http://$(EXTERNAL_IP):9080/"
+      curl "http://${EXTERNAL_IP}:9080/"
     expect:
       exitCode:
         equals: 0
