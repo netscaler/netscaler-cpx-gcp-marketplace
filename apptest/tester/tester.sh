@@ -19,14 +19,10 @@ shopt -s nullglob
 
 POD_NAME=$(kubectl get pod -oname \
         --namespace ${NAMESPACE} | \
-        sed -n "/\\/${APP_INSTANCE_NAME}-cpx-ingress/s.pods\\?/..p")
+        sed -n "/\\/${APP_INSTANCE_NAME}-citrix-cpx-with-ingress-controller/s.pods\\?/..p")
 
 POD_IP=$(kubectl get pods "${POD_NAME}" \
       --namespace ${NAMESPACE} -ojsonpath="{.status.podIP}")
-
-EXTERNAL_IP="$(kubectl get service/${APP_INSTANCE_NAME}-cpx-service \
-    --namespace ${NAMESPACE} \
-    --output jsonpath='{.status.loadBalancer.ingress[0].ip}')"
 
 POD_STATUS=$(kubectl get pods "${POD_NAME}" \
            --namespace ${NAMESPACE} -ojsonpath="{.status.phase}")

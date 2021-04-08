@@ -4,17 +4,17 @@ include ./gcloud.Makefile
 include ./var.Makefile
 
 
-TAG ?= 12.1-51.16
-GCP_TAG ?= 12.1
-CIC_TAG ?= 1.1.1
-EXPORTER_TAG ?= v1.0.4
+TAG ?= 1.13.20
+GCP_TAG ?= 1.13
+CPX_TAG ?= 13.0-76.29
+EXPORTER_TAG ?= 1.4.7
 $(info ---- TAG = $(TAG))
 
 APP_DEPLOYER_IMAGE ?= $(REGISTRY)/citrix-adc-cpx/deployer:$(TAG)
-NAME ?= citrix-adc-cpx-1
+NAME ?= citrix-adc-cpx-with-cic
 
 ifdef IMAGE_CITRIX_CPX
-  IMAGE_CITRIX_CPX_FIELD = , "cpx.image": "$(IMAGE_CITRIX_CPX)" endif
+  IMAGE_CITRIX_CPX_FIELD = , "image": "$(IMAGE_CITRIX_CPX)" endif
 endif
 
 ifdef IMAGE_CITRIX_CONTROLLER
@@ -63,8 +63,8 @@ app/build:: .build/citrix-adc-cpx/debian9  \
 
 
 .build/citrix-adc-cpx/deployer: deployer/* \
-                       chart/citrix-adc-cpx/* \
-                       chart/citrix-adc-cpx/templates/* \
+                       chart/citrix-cpx-with-ingress-controller/* \
+                       chart/citrix-cpx-with-ingress-controller/templates/* \
                        schema.yaml \
                        .build/var/APP_DEPLOYER_IMAGE \
                        .build/var/MARKETPLACE_TOOLS_TAG \
@@ -89,10 +89,10 @@ app/build:: .build/citrix-adc-cpx/debian9  \
 .build/citrix-adc-cpx/citrix-adc-cpx: .build/var/REGISTRY \
                     .build/var/TAG \
                     | .build/citrix-adc-cpx
-	docker pull quay.io/citrix/citrix-k8s-cpx-ingress:$(TAG)
-	docker tag quay.io/citrix/citrix-k8s-cpx-ingress:$(TAG) \
+	docker pull quay.io/citrix/citrix-k8s-cpx-ingress:$(CPX_TAG)
+	docker tag quay.io/citrix/citrix-k8s-cpx-ingress:$(CPX_TAG) \
 	    "$(REGISTRY)/citrix-adc-cpx:$(TAG)"
-	docker tag quay.io/citrix/citrix-k8s-cpx-ingress:$(TAG) \
+	docker tag quay.io/citrix/citrix-k8s-cpx-ingress:$(CPX_TAG) \
             "$(REGISTRY)/citrix-adc-cpx:$(GCP_TAG)"
 	docker push "$(REGISTRY)/citrix-adc-cpx:$(TAG)"
 	docker push "$(REGISTRY)/citrix-adc-cpx:$(GCP_TAG)"
@@ -102,8 +102,8 @@ app/build:: .build/citrix-adc-cpx/debian9  \
 .build/citrix-adc-cpx/citrix-k8s-ingress-controller: .build/var/REGISTRY \
                     .build/var/TAG \
                     | .build/citrix-adc-cpx
-	docker pull quay.io/citrix/citrix-k8s-ingress-controller:$(CIC_TAG)
-	docker tag quay.io/citrix/citrix-k8s-ingress-controller:$(CIC_TAG) \
+	docker pull quay.io/citrix/citrix-k8s-ingress-controller:$(TAG)
+	docker tag quay.io/citrix/citrix-k8s-ingress-controller:$(TAG) \
 	    "$(REGISTRY)/citrix-adc-cpx/citrix-k8s-ingress-controller:$(TAG)"
 	docker push "$(REGISTRY)/citrix-adc-cpx/citrix-k8s-ingress-controller:$(TAG)"
 	@touch "$@"
@@ -112,10 +112,10 @@ app/build:: .build/citrix-adc-cpx/debian9  \
 .build/citrix-adc-cpx/exporter: .build/var/REGISTRY \
                     .build/var/TAG \
                     | .build/citrix-adc-cpx
-	docker pull quay.io/citrix/netscaler-metrics-exporter:$(EXPORTER_TAG)
-	docker tag quay.io/citrix/netscaler-metrics-exporter:$(EXPORTER_TAG) \
-	    "$(REGISTRY)/citrix-adc-cpx/netscaler-metrics-exporter:$(TAG)"
-	docker push "$(REGISTRY)/citrix-adc-cpx/netscaler-metrics-exporter:$(TAG)"
+	docker pull quay.io/citrix/citrix-adc-metrics-exporter:$(EXPORTER_TAG)
+	docker tag quay.io/citrix/citrix-adc-metrics-exporter:$(EXPORTER_TAG) \
+	    "$(REGISTRY)/citrix-adc-cpx/citrix-adc-metrics-exporter:$(TAG)"
+	docker push "$(REGISTRY)/citrix-adc-cpx/citrix-adc-metrics-exporter:$(TAG)"
 	@touch "$@"
 
 

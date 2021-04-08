@@ -3,13 +3,13 @@ kind: Application
 metadata:
   name: "{{ .Release.Name }}"
   annotations:
-    marketplace.cloud.google.com/deploy-info: '{"partner_id": "citrix-master-project", "product_id": "citrix-k8s-cpx-ingress-controller", "partner_name": "Citrix"}'
+    marketplace.cloud.google.com/deploy-info: '{"partner_id": "citrix-master-project", "product_id": "citrix-adc-cpx", "partner_name": "Citrix"}'
   labels:
     app.kubernetes.io/name: "{{ .Release.Name }}"
 spec:
   descriptor:
     type: CITRIX
-    version: '121.51.16'
+    version: '1.13.20'
     description: |-
       People-centric solutions for a better way to work
     maintainers:
@@ -28,15 +28,15 @@ spec:
     matchLabels:
       app.kubernetes.io/name: "{{ .Release.Name }}"
   componentKinds:
-  - group: v1
+  - group: ''
     kind: ConfigMap
-  - group: v1
-    kind: PersistentVolumeClaim
-  - group: v1
-    kind: Pod
-  - group: apps/v1beta2
-    kind: StatefulSet
-  - group: v1
+  - group: apps
+    kind: Deployment
+  - group: ''
     kind: Secret
-  - group: v1
+  - group: ''
     kind: Service
+  - group: networking.k8s.io
+    kind: IngressClass
+  - group: apiextensions.k8s.io
+    kind: CustomResourceDefinition

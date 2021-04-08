@@ -7,11 +7,3 @@ actions:
     expect:
       stdout:
         contains: 'Running'
-
-- name: Is NITRO reponding properly in Citrix ADC CPX
-  bashTest:
-    script: |-
-      curl "http://${EXTERNAL_IP}:9080/"
-    expect:
-      exitCode:
-        equals: 0

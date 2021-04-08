@@ -1,4 +1,39 @@
-application_api_version: v1beta1
+x-google-marketplace:
+  schemaVersion: v2
+  applicationApiVersion: v1beta1
+  publishedVersion: "$TAG"
+  publishedVersionMetadata:
+    releaseNote: >-
+      A regular update.
+    releaseTypes:
+      - Feature
+    recommended: True
+
+  images:
+    '':  # Primary image has no name.
+      properties:
+        image:
+          type: FULL
+    citrix-k8s-ingress-controller:
+      properties:
+        cic.image:
+          type: FULL
+    citrix-adc-metrics-exporter:
+      properties:
+        exporter.image:
+          type: FULL
+  deployerServiceAccount:
+    description: "Creates app resources, including the MyAppCustomResource CRD."
+    roles:
+    - type: ClusterRole
+      rulesType: CUSTOM
+      rules:
+      - apiGroups: ['apiextensions.k8s.io']
+        resources: ['customresourcedefinitions']
+        verbs: ['*']
+      - apiGroups: ['networking.k8s.io']
+        resources: ['ingressclasses']
+        verbs: ['*']
 properties:
   name:
     type: string
@@ -12,74 +47,297 @@ properties:
     type: string
     title: EULA License
     description: Accept EULA license
-    default: "no"
-  cic.image:
-    type: string
-    default: $REGISTRY/citrix-k8s-ingress-controller:$TAG
-    x-google-marketplace:
-      type: IMAGE
-  cic.required:
-    type: boolean
-    title: Citrix Ingress Controller
-    description: Set if CIC is required for Citrix ADC CPX
-    default: false
-  cpx.image:
-    type: string
-    default: $REGISTRY:$TAG
-    x-google-marketplace:
-      type: IMAGE
+    default: 'no'
+    enum:
+    - 'yes'
+    - 'no'
   serviceAccount:
     type: string
     x-google-marketplace:
       type: SERVICE_ACCOUNT
       serviceAccount:
+        description: "These Permission are required for configuring Citrix ADC CPX according to the current state of the Kubernetes Cluster"
         roles:
         - type: ClusterRole
           rulesType: CUSTOM
           rules:
-          - apiGroups: ['']
-            resources: ['services', 'endpoints', 'ingresses', 'pods', 'secrets', 'nodes']
-            verbs: ['*']
-          - apiGroups: ['extensions']
-            resources: ['ingresses', 'ingresses/status']
-            verbs: ['*']
-          - apiGroups: ['citrix.com']
-            resources: ['rewritepolicies']
-            verbs: ['*']
-          - apiGroups: ['apps']
-            resources: ['deployments']
-            verbs: ['*']
+          - apiGroups: [""]
+            resources: ["endpoints", "ingresses", "pods", "secrets", "nodes", "routes", "namespaces", "configmaps"]
+            verbs: ["get", "list", "watch"]
+          # services/status is needed to update the loadbalancer IP in service status for integrating
+          # service of type LoadBalancer with external-dns
+          - apiGroups: [""]
+            resources: ["services/status"]
+            verbs: ["patch"]
+          - apiGroups: [""]
+            resources: ["services"]
+            verbs: ["get", "list", "watch", "patch"]
+          - apiGroups: [""]
+            resources: ["events"]
+            verbs: ["create"]
+          - apiGroups: ["extensions"]
+            resources: ["ingresses", "ingresses/status"]
+            verbs: ["get", "list", "watch", "patch"]
+          - apiGroups: ["networking.k8s.io"]
+            resources: ["ingresses", "ingresses/status", "ingressclasses"]
+            verbs: ["get", "list", "watch", "patch"]
+          - apiGroups: ["apiextensions.k8s.io"]
+            resources: ["customresourcedefinitions"]
+            verbs: ["get", "list", "watch"]
+          - apiGroups: ["apps"]
+            resources: ["deployments"]
+            verbs: ["get", "list", "watch"]
+          - apiGroups: ["citrix.com"]
+            resources: ["rewritepolicies", "authpolicies", "ratelimits", "listeners", "httproutes", "continuousdeployments", "apigatewaypolicies", "wafs", "bots"]
+            verbs: ["get", "list", "watch", "create", "delete", "patch"]
+          - apiGroups: ["citrix.com"]
+            resources: ["rewritepolicies/status", "continuousdeployments/status", "authpolicies/status", "ratelimits/status", "listeners/status", "httproutes/status", "wafs/status", "apigatewaypolicies/status", "bots/status"]
+            verbs: ["get", "list", "patch"]
+          - apiGroups: ["citrix.com"]
+            resources: ["vips"]
+            verbs: ["get", "list", "watch", "create", "delete"]
+          - apiGroups: ["crd.projectcalico.org"]
+            resources: ["ipamblocks"]
+            verbs: ["get", "list", "watch"]
+  ADMSettings.licenseServerIP:
+    type: string
+    title: Citrix Application Delivery Management (ADM) IP address to license Citrix ADC CPX
+    description: Provide the Citrix Application Delivery Management (ADM) IP address to license Citrix ADC CPX.
+  ADMSettings.licenseServerPort:
+    type: integer
+    title: Citrix ADM port
+    description: Citrix ADM port if non-default port is used.
+    default: 27000
+    minimum: 0
+    maximum: 65535
+  ADMSettings.ADMIP:
+    type: string
+    title: Citrix Application Delivery Management (ADM) IP address
+    description: Citrix Application Delivery Management (ADM) IP address.
+  ADMSettings.ADMFingerPrint:
+    type: string
+    title: Citrix Application Delivery Management (ADM) Finger Print
+    description: Citrix Application Delivery Management (ADM) Finger Print.
+  ADMSettings.loginSecret:
+    type: string
+    title: The Kubernetes secret name to login to the ADM
+    description: The Kubernetes secret name created using ADM credential to login to the ADM.
+  ADMSettings.bandWidthLicense:
+    type: boolean
+    title: Want to use bandwidth based licensing for Citrix ADC CPX?
+    description: Set to True if you want to use bandwidth based licensing for Citrix ADC CPX.
+    default: False
+  ADMSettings.bandWidth:
+    type: string
+    title: Bandwidth capacity for Citrix ADC CPX
+    description: Desired bandwidth capacity to be set for Citrix ADC CPX in Mbps.
+  ADMSettings.vCPULicense:
+    type: boolean
+    title: Want to use vCPU based licensing for Citrix ADC CPX.
+    description: Set to True if you want to use vCPU based licensing for Citrix ADC CPX.
+    default: False
+  ADMSettings.cpxCores:
+    type: integer
+    title: Desired number of vCPU to be set for Citrix ADC CPX
+    description: Desired number of vCPU to be set for Citrix ADC CPX.
+    default: 1
+  cic.required:
+    type: boolean
+    title: Citrix Ingress Controller
+    description: Set if CIC is required for Citrix ADC CPX
+    default: True
+  nsProtocol:
+    type: string
+    title: Protocol for NITRO
+    description: Protocol used for Citrix ADC NITRO.
+    default: HTTP
+    enum:
+    - "HTTPS"
+    - "HTTP"
   logLevel:
     type: string
     title: Log level of Citrix ingress controller
     description: Level of logs generated by Citrix ingress controller
-    default: DEBUG
+    default: INFO
+    enum:
+    - "CRITICAL"
+    - "ERROR"
+    - "WARNING"
+    - "INFO"
+    - "DEBUG"
+    - "TRACE"
+  entityPrefix:
+    type: string
+    title: Prefix
+    description: The prefix for the resources on the Citrix ADC CPX.
+    default: k8s
+  kubernetesURL:
+    type: string
+    title: Kubernetes URL
+    description: The kube-apiserver url that CIC uses to register the events. If the value is not specified, CIC uses the internal kube-apiserver IP address.
   ingressClass:
     type: string
     title: Ingress Class
     description: Please provide name of the Ingress Class if needs to be supported by Citrix Ingress Controller.
-  exporter.image:
+  setAsDefaultIngressClass:
+    type: boolean
+    title: Set as Default Ingress Class
+    description: Set the IngressClass object as default ingress class. New Ingresses without an "ingressClassName" field specified will be assigned the class specified in ingressClass. Applicable only for Kubernetes versions >= 1.19.
+    default: False
+  updateIngressStatus:
+    type: boolean
+    title: Update Ingress Status
+    description: Set this argurment if Status.LoadBalancer.Ingress field of the Ingress resources managed by the Citrix ingress controller needs to be updated with allocated IP addresses.
+    default: False
+  defaultSSLCertSecret:
     type: string
-    default: $REGISTRY/netscaler-metrics-exporter:$TAG
-    x-google-marketplace:
-      type: IMAGE
+    title: Default SSL Certificate Secret Name.
+    description: Provide Kubernetes secret name that needs to be used as a default non-SNI certificate in Citrix ADC CPX.
+  ipam:
+    type: boolean
+    title: Using IPAM Controller?
+    description: Set this argument if you want to use the IPAM controller to automatically allocate an IP address to the service of type LoadBalancer.
+    default: False
+  nodeSelector.key:
+    type: string
+    title: Provide Node Selector Key for CPX with Ingress Contoller Pod
+    description: Node label key to be used for nodeSelector option in CPX with Ingress Contoller Pod.
+  nodeSelector.value:
+    type: string
+    title: Provide Node Selector Value for CPX with Ingress Contoller Pod
+    description: Node label value to be used for nodeSelector option in CPX with Ingress Contoller Pod.
+  serviceType.loadBalancer.enabled:
+    type: boolean
+    title: Want CPX service to be of type LoadBalancer?
+    description: Set this argument if you want servicetype of CPX service to be LoadBalancer.
+    default: False
+  serviceType.nodePort.enabled:
+    type: boolean
+    title: Want CPX service to be of type NodePort?
+    description: Set this argument if you want servicetype of CPX service to be NodePort.
+    default: False
+  serviceType.nodePort.httpPort:
+    type: integer
+    title: Specify the HTTP nodeport to be used for NodePort CPX service
+    description: Specify the HTTP nodeport to be used for NodePort CPX service.
+    minimum: 0
+    maximum: 65535
+  serviceType.nodePort.httpsPort:
+    type: integer
+    title: Specify the HTTPS nodeport to be used for NodePort CPX service
+    description: Specify the HTTPS nodeport to be used for NodePort CPX service.
+    minimum: 0
+    maximum: 65535
+  nsHTTP2ServerSide:
+    type: string
+    title: HTTP2 for Citrix ADC CPX service group
+    description: Set this argument to ON for enabling HTTP2 for Citrix ADC CPX service group configurations.
+    default: 'OFF'
+    enum:
+    - 'OFF'
+    - 'ON'
+  nsCookieVersion:
+    type: string
+    title: Persistence Cookie Version
+    description: Specify the persistence cookie version.
+    default: '0'
+    enum:
+    - '0'
+    - '1'
   exporter.required:
     type: boolean
-    title: Prometheus Exporter
-    description: Set if exporter is needed with Citrix ADC CPX
-    default: false
+    title: Prometheus Exporter required?
+    description: Set if exporter is needed with Citrix ADC CPX.
+    default: False
   exporter.ports.containerPort:
     type: integer
     title: Prometheus Exporter Port
     description: Specify on which port metrics collected by the exporter should be exposed.
     default: 8888
+    minimum: 0
+    maximum: 65535
+  crd.install:
+    type: boolean
+    title: Install CRDs provided by Citrix
+    description: Unset this argument if you don't want to install CustomResourceDefinitions which are consumed by Citrix ingress contoller which is running along CPX.
+    default: True
+  crds.retainOnDelete:
+    type: boolean
+    title: Retain CRDs on delete.
+    description: Set this argument if you want to retain CustomResourceDefinitions even after uninstalling CPX with ingress contoller. This will avoid data-loss of Custom Resource Objects created before uninstallation.
+    default: False
+  coeConfig.required:
+    type: boolean
+    title: COE Config Required?
+    description: Set this to True if you want to configure Citrix ADC CPX to send metrics and transaction records to COE.
+    default: False
+  coeConfig.distributedTracing.enable:
+    type: boolean
+    title: Enable OpenTracing in Citrix ADC
+    description: Set this value to True to enable OpenTracing in Citrix ADC CPX.
+    default: False
+  coeConfig.distributedTracing.samplingrate:
+    type: integer
+    title: OpenTracing sampling rate in percentage
+    description: Specifies the OpenTracing sampling rate in percentage.
+    default: 100
+    minimum: 0
+    maximum: 100
+  coeConfig.endpoint.server:
+    type: string
+    title: IP address or DNS address of the analytics server
+    description: Set this value as the IP address or DNS address of the analytics server.
+  coeConfig.timeseries.port:
+    type: integer
+    title: Port used to expose COE service for timeseries endpoint
+    description: Specify the port used to expose COE service outside cluster for timeseries endpoint.
+    default: 30002
+    minimum: 0
+    maximum: 65535
+  coeConfig.timeseries.metrics.enable:
+    type: boolean
+    title: Enable sending metrics from Citrix ADC CPX
+    description: Set this value to True to enable sending metrics from Citrix ADC CPX.
+    default: False
+  coeConfig.timeseries.metrics.mode:
+    type: string
+    title: Specifies the mode of metric endpoint.
+    description: Specifies the mode of metric endpoint.
+    default: avro
+  coeConfig.timeseries.auditlogs.enable:
+    type: boolean
+    title: Export audit log data from Citrix ADC CPX
+    description: Set this value to True to export audit log data from Citrix ADC CPX.
+    default: False
+  coeConfig.timeseries.events.enable:
+    type: boolean
+    title: Export events from the Citrix ADC CPX
+    description: Set this value to True to export events from the Citrix ADC CPX.
+    default: False
+  coeConfig.transactions.enable:
+    type: boolean
+    title: Export transactions from Citrix ADC CPX.
+    description: Set this value to True to export transactions from Citrix ADC CPX.
+    default: False
+  coeConfig.transactions.port:
+    type: integer
+    title: Port used to expose COE service for transaction endpoint.
+    description: Specify the port used to expose COE service outside cluster for transaction endpoint.
+    default: 30001
+    minimum: 0
+    maximum: 65535
+  appUid:
+    type: string
+    x-google-marketplace:
+      type: APPLICATION_UID
+      applicationUid:
+        generatedProperties:
+          createApplicationBoolean: global.application.create
 
 required:
 - name
 - namespace
-- cpx.image
 - cic.required
-- cic.image
 - serviceAccount
 - exporter.required
-- exporter.image
+- coeConfig.required
