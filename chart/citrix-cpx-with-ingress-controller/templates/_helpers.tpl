@@ -3,10 +3,10 @@
 Analytics Server IP or DNS
 */}}
 {{- define "analytics.server" -}}
-{{- if .Values.coeConfig.endpoint.server -}}
-{{- printf .Values.coeConfig.endpoint.server -}}
+{{- if .Values.analyticsConfig.endpoint.server -}}
+{{- printf .Values.analyticsConfig.endpoint.server -}}
 {{- else -}}
-{{- printf "coe.%s.svc.cluster.local" .Release.Namespace -}}
+{{- printf "analytics.%s.svc.cluster.local" .Release.Namespace -}}
 {{- end -}}
 {{- end -}}
 
@@ -83,4 +83,15 @@ Create chart name and version as used by the chart label.
 */}}
 {{- define "citrix-cpx-ingress-controller.chart" -}}
 {{- printf "%s-%s" .Chart.Name .Chart.Version | replace "+" "_" | trunc 63 | trimSuffix "-" -}}
+{{- end -}}
+
+{{/*
+Create the name of the service account to use
+*/}}
+{{- define "citrix-cpx-ingress-controller.serviceAccountName" -}}
+{{- if .Values.serviceAccount.create -}}
+    {{ default (include "citrix-cpx-ingress-controller.fullname" .) .Values.serviceAccount.name }}
+{{- else -}}
+    {{ default "default" .Values.serviceAccount.name }}
+{{- end -}}
 {{- end -}}

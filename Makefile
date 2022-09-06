@@ -4,10 +4,10 @@ include ./gcloud.Makefile
 include ./var.Makefile
 
 
-TAG ?= 1.13.20
-GCP_TAG ?= 1.13
-CPX_TAG ?= 13.0-76.29
-EXPORTER_TAG ?= 1.4.7
+TAG ?= 1.26.7
+GCP_TAG ?= 1.26
+CPX_TAG ?= 13.0-83.27
+EXPORTER_TAG ?= 1.4.9
 $(info ---- TAG = $(TAG))
 
 APP_DEPLOYER_IMAGE ?= $(REGISTRY)/citrix-adc-cpx/deployer:$(TAG)
