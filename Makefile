@@ -6,7 +6,7 @@ include ./var.Makefile
 
 TAG ?= 1.26.7
 GCP_TAG ?= 1.26
-CPX_TAG ?= 13.0-83.27
+CPX_TAG ?= 13.0-88.14
 EXPORTER_TAG ?= 1.4.9
 $(info ---- TAG = $(TAG))
 
@@ -94,8 +94,11 @@ app/build:: .build/citrix-adc-cpx/debian9  \
 	    "$(REGISTRY)/citrix-adc-cpx:$(TAG)"
 	docker tag quay.io/citrix/citrix-k8s-cpx-ingress:$(CPX_TAG) \
             "$(REGISTRY)/citrix-adc-cpx:$(GCP_TAG)"
+	docker tag quay.io/citrix/citrix-k8s-cpx-ingress:$(CPX_TAG) \
+            "$(REGISTRY)/citrix-adc-cpx:$(CPX_TAG)"
 	docker push "$(REGISTRY)/citrix-adc-cpx:$(TAG)"
 	docker push "$(REGISTRY)/citrix-adc-cpx:$(GCP_TAG)"
+	docker push "$(REGISTRY)/citrix-adc-cpx:$(CPX_TAG)"
 	@touch "$@"
 
 
@@ -115,7 +118,10 @@ app/build:: .build/citrix-adc-cpx/debian9  \
 	docker pull quay.io/citrix/citrix-adc-metrics-exporter:$(EXPORTER_TAG)
 	docker tag quay.io/citrix/citrix-adc-metrics-exporter:$(EXPORTER_TAG) \
 	    "$(REGISTRY)/citrix-adc-cpx/citrix-adc-metrics-exporter:$(TAG)"
+	docker tag quay.io/citrix/citrix-adc-metrics-exporter:$(EXPORTER_TAG) \
+	    "$(REGISTRY)/citrix-adc-cpx/citrix-adc-metrics-exporter:$(EXPORTER_TAG)"
 	docker push "$(REGISTRY)/citrix-adc-cpx/citrix-adc-metrics-exporter:$(TAG)"
+	docker push "$(REGISTRY)/citrix-adc-cpx/citrix-adc-metrics-exporter:$(EXPORTER_TAG)"
 	@touch "$@"
 
 
